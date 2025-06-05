@@ -1,36 +1,57 @@
-### IMPLEMENT 'getMyPosition' FUNCTION #############
-### TO RUN, RUN 'eval.py' ##########################
-
 import numpy as np
 
 nInst = 50
 currentPos = np.zeros(nInst)
-
+lastTradeDay = -1000
+holdingWindow = 10
+lastSignal = np.zeros(nInst)
 
 def getMyPosition(prcSoFar):
-    global currentPos
+    global currentPos, lastTradeDay, lastSignal
     nInst, nt = prcSoFar.shape
 
-    # Limit to training period only (first 250 days)
-    if nt > 250:
-        return np.zeros(nInst, dtype=int)
+    # Trade only in a defined window
+    if nt < 100 or nt > 500:
+        return currentPos
 
-    # Not enough data for return computation
-    if nt < 2:
-        return np.zeros(nInst, dtype=int)
+    # Trade only every 15 days
+    if (nt - lastTradeDay) < holdingWindow:
+        return currentPos
 
-    # Log return from previous day
-    lastRet = np.log(prcSoFar[:, -1] / prcSoFar[:, -2])
+    # --- Parameters ---
+    ma_window = 50
+    zscore_threshold = 1.0
+    top_k = 5
+    max_dollar_position = 10000
 
-    # Normalize returns (L2 norm)
-    lNorm = np.linalg.norm(lastRet)
-    if lNorm > 0:
-        lastRet /= lNorm
+    price = prcSoFar[:, -1]
+    ma = np.mean(prcSoFar[:, -ma_window:], axis=1)
+    std = np.std(prcSoFar[:, -ma_window:], axis=1) + 1e-6
+    slope = ma - np.mean(prcSoFar[:, -ma_window-5:-5], axis=1)
 
-    # Convert to share positions based on price and return
-    rpos = (5000 * lastRet / prcSoFar[:, -1]).astype(int)
+    zscore = (price - ma) / std
+    momentum = np.sign(slope)
 
-    # Update cumulative position
-    currentPos = (currentPos + rpos).astype(int)
+    # Breakout signal with trend confirmation
+    raw_signal = np.zeros(nInst)
+    raw_signal[(zscore >= zscore_threshold) & (momentum > 0)] = 1
+    raw_signal[(zscore <= -zscore_threshold) & (momentum < 0)] = -1
+
+    # Select top-k strongest signals
+    ranked_indices = np.argsort(-np.abs(zscore * raw_signal))
+    signal = np.zeros(nInst)
+    count = 0
+    for idx in ranked_indices:
+        if raw_signal[idx] != 0 and count < top_k:
+            signal[idx] = raw_signal[idx]
+            count += 1
+
+    # Convert signal to position
+    target_dollar = max_dollar_position * signal
+    proposedPos = (target_dollar / price).astype(int)
+
+    currentPos = proposedPos
+    lastSignal = signal
+    lastTradeDay = nt
 
     return currentPos
