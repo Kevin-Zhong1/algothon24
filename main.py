@@ -20,8 +20,8 @@ def getMyPosition(prcSoFar):
 
     # --- Parameters ---
     ma_window = 50
-    zscore_threshold = 1.0
-    top_k = 5
+    zscore_threshold = 1
+    top_k = 15
     max_dollar_position = 10000
 
     price = prcSoFar[:, -1]
