@@ -6,12 +6,13 @@ lastTradeDay = -1000
 holdingWindow = 10
 lastSignal = np.zeros(nInst)
 
+
 def getMyPosition(prcSoFar):
     global currentPos, lastTradeDay, lastSignal
     nInst, nt = prcSoFar.shape
 
     # Trade only in a defined window
-    if nt < 100 or nt > 500:
+    if nt < 100 or nt > 400:
         return currentPos
 
     # Trade only every 15 days
@@ -27,7 +28,7 @@ def getMyPosition(prcSoFar):
     price = prcSoFar[:, -1]
     ma = np.mean(prcSoFar[:, -ma_window:], axis=1)
     std = np.std(prcSoFar[:, -ma_window:], axis=1) + 1e-6
-    slope = ma - np.mean(prcSoFar[:, -ma_window-5:-5], axis=1)
+    slope = ma - np.mean(prcSoFar[:, -ma_window - 5 : -5], axis=1)
 
     zscore = (price - ma) / std
     momentum = np.sign(slope)
