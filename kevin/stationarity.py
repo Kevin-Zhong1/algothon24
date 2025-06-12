@@ -53,12 +53,6 @@ print(f"Raw Prices Stationary: {sum(stationary_raw)}/50")
 print(f"Additive Returns Stationary: {sum(stationary_additive)}/50")
 print(f"Multiplicative Returns Stationary: {sum(stationary_multiplicative)}/50")
 
-# train_prices["STOCK1"].plot(title="Raw Price")
-# plt.show()
-
-# additive_returns["STOCK1"].dropna().plot(title="Additive Return")
-# plt.show()
-
 result = adfuller(additive_returns["STOCK1"].dropna())
 print("ADF statistic:", result[0])
 print("p-value:", result[1])
